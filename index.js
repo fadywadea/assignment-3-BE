@@ -173,7 +173,7 @@ app.post('/addProduct', (req, res) => {
     if (err) {
       res.json({ message: "Can't add user" });
     } else {
-      res.json({ message: 'Product added successfully' });
+      res.json({ message: 'Product added successfully', data });
     }
   });
 });
@@ -184,44 +184,135 @@ app.delete('/deleteProduct', (req, res) => {
   const { id, createdby, product_id } = req.body;
 
   query.execute(`select * from users where id='${id}'`, (err, data) => {
+
     if (err) {
       const { sqlMessage } = err;
       res.json({ message: sqlMessage });
     } else {
 
-      query.execute(`select * from product where createdby='${createdby}'`);
-      data[0].id = createdby;
-      if (data[0].id == createdby) {
-        query.execute(`delete from product where product_id='${product_id}'`);
-        console.log(product_id);
-        res.json({ message: 'Product deleted successfully' });
+      // if user_id not valid
+      if (data.length == 0) {
+        console.log(data.length, "id_user:not founded");
+        res.json({ message: "user not founded" });
       } else {
-        res.json({ message: 'You are not the creator of this product' });
+
+        // if user_id valid
+        if (data.length > 0) {
+          console.log(data.length, "id_user: founded");
+          query.execute(`select * from product where createdby='${createdby}'`, (err, data) => {
+
+            if (err) {
+              const { sqlMessage } = err;
+              res.json({ message: sqlMessage });
+            } else {
+
+              // if not created by user
+              if (data.length == 0) {
+                console.log(data.length, "not creator");
+                res.json({ message: "not auth" });
+              } else {
+
+                // if created by user
+                if (data.length > 0) {
+                  console.log(data.length, "creator");
+                  query.execute(`delete from product where product_id='${product_id}'`, (err, data) => {
+
+                    if (err) {
+                      const { sqlMessage } = err;
+                      res.json({ message: sqlMessage });
+                    } else {
+
+                      // if product_id not valid
+                      if (data.affectedRows == 0) {
+                        console.log(data, "product_id{1}");
+                        res.json({ message: 'Product not founded' });
+                      } else {
+
+                        // if product_id valid
+                        if (data.affectedRows > 0) {
+                          console.log(data, "product_id{2}");
+                          res.json({ message: 'Product deleted successfully', data });
+                        }
+                      }
+                    }
+                  });
+                }
+              };
+            };
+          });
+        }
       }
-    }
+
+    };
   });
 });
 
 
 // update product (product owner only)
 app.put('/updateProduct', (req, res) => {
-  const { id, pName, pDescription, price, createdby } = req.body;
+  const { id, pDescription, price, createdby, product_id } = req.body;
 
+  // user id
   query.execute(`select * from users where id='${id}'`, (err, data) => {
     if (err) {
       const { sqlMessage } = err;
       res.json({ message: sqlMessage });
     } else {
 
-      query.execute(`select * from product where createdby='${createdby}'`);
-      data[0].id = createdby;
-      if (data[0].id == createdby) {
-
-        query.execute(`update product set pName='${pName}',pDescription='${pDescription}',price='${price}'
-        where createdby='${createdby}'`);
-        res.json({ message: 'Product updated successfully' });
+      // if user_id not valid
+      if (data.length == 0) {
+        console.log(data.length, "user_ID not valid");
+        res.json({ message: 'User not founded' });
       } else {
-        res.json({ message: 'You are not the creator of this product' });
+
+        // if user_id valid
+        if (data.length > 0) {
+          console.log(data.length, "user_ID valid");
+
+          // select createdby
+          query.execute(`select * from product where createdby='${createdby}'`, (err, data) => {
+
+            if (err) {
+              const { sqlMessage } = err;
+              res.json({ message: sqlMessage });
+            } else {
+
+              // if not createdby by user
+              if (data.length == 0) {
+                console.log(data.length, "createdby not valid");
+                res.json({ message: "not auth" });
+              } else {
+
+                // if createdby by user
+                if (data.length > 0) {
+                  console.log(data.length, "createdby valid");
+                  query.execute(`update product set pDescription='${pDescription}',price='${price}'
+                  where product_id='${product_id}'`, (err, data) => {
+
+                    if (err) {
+                      const { sqlMessage } = err;
+                      res.json({ message: sqlMessage });
+                    } else {
+
+                      // if product_id not valid
+                      if (data.affectedRows == 0) {
+                        console.log(data.affectedRows, "product_id not valid");
+                        res.json({ message: "product_id not valid" });
+                      } else {
+
+                        //if product_id valid
+                        if (data.affectedRows > 0) {
+                          console.log(data.affectedRows, "product_id valid");
+                          res.json({ message: 'Product updated successfully' });
+                        }
+                      }
+                    }
+                  });
+                }
+              }
+            }
+          });
+        }
       }
     }
   });
