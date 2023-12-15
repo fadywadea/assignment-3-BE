@@ -1,338 +1,199 @@
-const express = require('express');
-const mysql = require('mysql2');
+"use strict"
+const express = require("express");
+const mysql = require("mysql2");
 const app = express();
+const port = 3000;
 
+// Connect to database
 const query = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'assignment-3'
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "assignment-3",
 });
 
+// middle ware
 app.use(express.json());
 
 //* user APIs:
 
 // get all Users
-app.get('/', (req, res) => {
-  query.execute("select * from users", (err, data) => {
-    if (err) {
-      const { sqlMessage } = err;
-      res.json({ error: sqlMessage });
-    } else {
+app.get("/", (req, res) => {
+  query.execute("SELECT * FROM users", (err, data) => {
+    err ?
+      res.json({ error: err }) :
       res.json(data);
-    }
   });
 });
-
 
 // add user (user must not found before)
-app.post('/addUser', (req, res) => {
+app.post("/addUser", (req, res) => {
   const { name, email, password, age } = req.body;
-
-  query.execute(`insert into users (name,email,password) values ('${name}','${email}','${password}')`, (err, data) => {
-    if (err) {
-      const { sqlMessage } = err;
-      res.json({ error: sqlMessage, message: 'Email already existed' });
-    } else {
-      res.json({ message: 'User added successfully' });
-    }
-  });
+  query.execute(`INSERT INTO users (name,email,password,age) VALUES ('${name}','${email}','${password}','${age}')`,
+    (err, data) => {
+      err ?
+        res.json({ error: err }) :
+        res.json({ message: "User added successfully", data });
+    });
 });
 
-
-
-// update user 
-app.put('/updateUser', (req, res) => {
+// update user
+app.put("/updateUser", (req, res) => {
   const { id, name, password } = req.body;
-
-  query.execute(`select * from users where id='${id}'`, (err, data) => {
-    if (err) {
-      const { sqlMessage } = err;
-      res.json({ error: sqlMessage });
-    } else {
-      if (data.length) {
-
-        query.execute(`update users set name='${name}',password='${password}' where id='${id}'`, (err, data) => {
-          if (err) {
-            const { sqlMessage } = err;
-            res.json({ error: sqlMessage });
-          } else {
-            res.json({ message: 'User updated successfully' });
-          }
-        });
-      } else {
-        res.json({ error: "No such User" });
-      }
-    }
+  query.execute(`SELECT * FROM users WHERE id='${id}'`, (err, data) => {
+    err ?
+      res.json({ error: err }) :
+      data.length ?
+        query.execute(`UPDATE users SET name='${name}',password='${password}' WHERE id='${id}'`, (err, data) => {
+          err ?
+            res.json({ error: err }) :
+            res.json({ message: "User updated successfully", data });
+        }) : res.json({ error: "User not founded" });
   });
 });
-
 
 // delete user(user must be found)
-app.delete('/deleteUser', (req, res) => {
+app.delete("/deleteUser", (req, res) => {
   const { id } = req.body;
-
-  query.execute(`select * from users where id='${id}'`, (err, data) => {
-    if (err) {
-      const { sqlMessage } = err;
-      res.json({ error: sqlMessage });
-    } else {
-      if (data.length) {
-
-        query.execute(`delete from users where id='${id}'`, (err, data) => {
-          if (err) {
-            const { sqlMessage } = err;
-            res.json({ error: sqlMessage });
-          } else {
-            res.json({ message: 'deleted successfully' });
-          }
-        });
-      } else {
-        res.json({ message: 'User not founded' });
-      };
-    }
+  query.execute(`SELECT * FROM users WHERE id='${id}'`, (err, data) => {
+    err ?
+      res.json({ error: err }) :
+      data.length ?
+        query.execute(`DELETE FROM users WHERE id='${id}'`, (err, data) => {
+          err ?
+            res.json({ error: err }) :
+            res.json({ message: "deleted successfully", data });
+        }) : res.json({ message: "User not founded" });
   });
 });
-
 
 // search for user where his name start with "a" and age less than 30 => using like for characters
-app.get('/searchUsers', (req, res) => {
-
-  query.execute("SELECT * FROM users WHERE name LIKE 'a%' AND age < 30", (err, data) => {
-    if (err) {
-      const { sqlMessage } = err;
-      res.json({ error: sqlMessage })
-    } else {
+app.get("/searchUsers", (req, res) => {
+  const { age, name } = req.body;
+  query.execute(`SELECT * FROM users WHERE name LIKE '%${name}%' AND age < ${age}`, (err, data) => {
+    err ?
+      res.json({ error: err }) :
       res.json(data);
-    }
   });
 });
-
 
 // search for users by list of ids => using IN
-app.get('/userID', (req, res) => {
+app.get("/userID", (req, res) => {
   const { id } = req.body;
-
-  query.execute(`SELECT * FROM users WHERE id IN (${id})`, (err, data) => {
-    if (err) {
-      const { sqlMessage } = err;
-      res.json({ error: sqlMessage });
-    } else {
-      if (data.length) {
-        res.json(data);
-      } else {
+  query.execute(`SELECT * FROM users WHERE id IN ('${id}')`, (err, data) => {
+    err ?
+      res.json({ error: err }) :
+      data.length ?
+        res.json(data) :
         res.json({ message: "User not founded" });
-      }
-    }
   });
 });
-
 
 // get all users with products
-app.get('/productsUsers', (req, res) => {
+app.get("/productsUsers", (req, res) => {
   const { id } = req.body;
-
   query.execute(`SELECT users.id, users.name, users.email, product.pName, product.price
     FROM users INNER JOIN product ON users.id = product.createdBy WHERE id = '${id}'`, (err, data) => {
-    if (err) {
-      const { sqlMessage } = err;
-      res.json({ message: sqlMessage });
-    } else {
-      if (data.length) {
-        res.json(data);
-      } else {
+    err ?
+      res.json({ message: err }) :
+      data.length ?
+        res.json(data) :
         res.json({ message: "Not founded" });
-      }
-    }
   });
 });
-
 
 //* product APIs:
 
 // get all products
-app.get('/products', (req, res) => {
-  query.execute("select * from product", (err, data) => {
-    if (err) {
-      const { sqlMessage } = err;
-      res.json({ message: sqlMessage });
-    } else {
+app.get("/products", (req, res) => {
+  query.execute("SELECT * FROM product", (err, data) => {
+    err ?
+      res.json({ message: err }) :
       res.json(data);
-    }
   });
 });
-
 
 // add product(product must not found before)
-app.post('/addProduct', (req, res) => {
+app.post("/addProduct", (req, res) => {
   const { pName, pDescription, price, createdby } = req.body;
-
-  query.execute(`insert into product (pName, pDescription, price, createdby) values ('${pName}','${pDescription}','${price}'
-    ,'${createdby}')`, (err, data) => {
-    if (err) {
-      res.json({ message: "Can't add user" });
-    } else {
-      res.json({ message: 'Product added successfully', data });
-    }
+  query.execute(`INSERT INTO product (pName, pDescription, price, createdby) VALUES ('${pName}','${pDescription}',
+  '${price}','${createdby}')`, (err, data) => {
+    err ?
+      res.json({ message: err }) :
+      res.json({ message: "Product added successfully", data });
   });
 });
-
 
 // delete product (product owner only can do this and product must be found)
-app.delete('/deleteProduct', (req, res) => {
+app.delete("/deleteProduct", (req, res) => {
   const { id, createdby, product_id } = req.body;
-
-  query.execute(`select * from users where id='${id}'`, (err, data) => {
-
-    if (err) {
-      const { sqlMessage } = err;
-      res.json({ message: sqlMessage });
-    } else {
-
-      // if user_id not valid
-      if (data.length == 0) {
-        console.log(data.length, "id_user:not founded");
-        res.json({ message: "user not founded" });
-      } else {
-
-        // if user_id valid
-        if (data.length > 0) {
-          console.log(data.length, "id_user: founded");
-          query.execute(`select * from product where createdby='${createdby}'`, (err, data) => {
-
-            if (err) {
-              const { sqlMessage } = err;
-              res.json({ message: sqlMessage });
-            } else {
-
-              // if not created by user
-              if (data.length == 0) {
-                console.log(data.length, "not creator");
-                res.json({ message: "not auth" });
-              } else {
-
-                // if created by user
-                if (data.length > 0) {
-                  console.log(data.length, "creator");
-                  query.execute(`delete from product where product_id='${product_id}'`, (err, data) => {
-
-                    if (err) {
-                      const { sqlMessage } = err;
-                      res.json({ message: sqlMessage });
-                    } else {
-
-                      // if product_id not valid
-                      if (data.affectedRows == 0) {
-                        console.log(data, "product_id{1}");
-                        res.json({ message: 'Product not founded' });
-                      } else {
-
-                        // if product_id valid
-                        if (data.affectedRows > 0) {
-                          console.log(data, "product_id{2}");
-                          res.json({ message: 'Product deleted successfully', data });
-                        }
-                      }
-                    }
-                  });
-                }
-              };
-            };
-          });
-        }
-      }
-
-    };
+  // select user
+  query.execute(`SELECT * FROM users WHERE id='${id}'`, (err, data) => {
+    err ?
+      res.json({ message: err }) :
+      // if user founded
+      data.length > 0 ?
+        query.execute(`SELECT * FROM product WHERE createdby='${createdby}'`, (err, data) => {
+          err ?
+            res.json({ message: err }) :
+            // if user created this product
+            data.length > 0 ?
+              query.execute(`DELETE FROM product WHERE product_id='${product_id}'`, (err, data) => {
+                err ?
+                  res.json({ message: err }) :
+                  // if product founded
+                  data.affectedRows > 0 ?
+                    res.json({ message: "Product deleted successfully" }) :
+                    res.json({ message: "Product not founded" })
+              }) : res.json({ message: "not auth" })
+        }) : res.json({ message: "user not founded" })
   });
 });
-
 
 // update product (product owner only)
-app.put('/updateProduct', (req, res) => {
+app.put("/updateProduct", (req, res) => {
   const { id, pDescription, price, createdby, product_id } = req.body;
-
   // user id
-  query.execute(`select * from users where id='${id}'`, (err, data) => {
+  query.execute(`SELECT * FROM users WHERE id='${id}'`, (err, data) => {
+    err ?
+      res.json({ message: err }) :
+      // if user_id valid
+      data.length > 0 ? query.execute(`SELECT * FROM product WHERE createdby='${createdby}'`, (err, data) => {
+        err ?
+          res.json({ message: err }) :
+          // if createdby by user
+          data.length > 0 ?
+            query.execute(`UPDATE product SET pDescription='${pDescription}', price='${price}'
+              WHERE product_id='${product_id}'`, (err, data) => {
+              err ?
+                res.json({ message: err }) :
+                //if product_id valid
+                data.affectedRows > 0 ?
+                  res.json({ message: "Product updated successfully" }) :
+                  res.json({ message: "product_id in valid" });
+            }) : res.json({ message: "Not auth" });
+      }) : res.json({ message: "User not founded" });
+  });
+});
+
+// search for products where price greater than 3000
+app.get("/searchProducts", (req, res) => {
+  query.execute("SELECT * FROM product WHERE price > 9", (err, data) => {
     if (err) {
-      const { sqlMessage } = err;
-      res.json({ message: sqlMessage });
+      res.json({ message: err });
     } else {
-
-      // if user_id not valid
-      if (data.length == 0) {
-        console.log(data.length, "user_ID not valid");
-        res.json({ message: 'User not founded' });
+      if (data == 0) {
+        res.json({ message: "not founded products" });
       } else {
-
-        // if user_id valid
-        if (data.length > 0) {
-          console.log(data.length, "user_ID valid");
-
-          // select createdby
-          query.execute(`select * from product where createdby='${createdby}'`, (err, data) => {
-
-            if (err) {
-              const { sqlMessage } = err;
-              res.json({ message: sqlMessage });
-            } else {
-
-              // if not createdby by user
-              if (data.length == 0) {
-                console.log(data.length, "createdby not valid");
-                res.json({ message: "not auth" });
-              } else {
-
-                // if createdby by user
-                if (data.length > 0) {
-                  console.log(data.length, "createdby valid");
-                  query.execute(`update product set pDescription='${pDescription}',price='${price}'
-                  where product_id='${product_id}'`, (err, data) => {
-
-                    if (err) {
-                      const { sqlMessage } = err;
-                      res.json({ message: sqlMessage });
-                    } else {
-
-                      // if product_id not valid
-                      if (data.affectedRows == 0) {
-                        console.log(data.affectedRows, "product_id not valid");
-                        res.json({ message: "product_id not valid" });
-                      } else {
-
-                        //if product_id valid
-                        if (data.affectedRows > 0) {
-                          console.log(data.affectedRows, "product_id valid");
-                          res.json({ message: 'Product updated successfully' });
-                        }
-                      }
-                    }
-                  });
-                }
-              }
-            }
-          });
-        }
+        const { pName, pDescription, price } = data[0];
+        // .find(products => products.pName && products.pDescription && products.price);\
+        res.json({ pName, pDescription, price });
       }
     }
   });
 });
 
-
-// search for products where price greater than 3000
-app.get('/searchProducts', (req, res) => {
-  query.execute("SELECT * FROM product WHERE price > 3000", (err, data) => {
-    if (err) {
-      const { sqlMessage } = err;
-      res.json({ message: sqlMessage });
-    } else {
-      res.json(data);
-    }
-  });
-});
-
-
 // port the server
-app.listen(3000, () => {
-  console.log("server running...");
-})
+app.listen(port, () => {
+  console.log(`server running...${port}`);
+});
