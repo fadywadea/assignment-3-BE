@@ -1,5 +1,4 @@
 "use strict";
-
 import { createConnection } from "mysql2";
 
 // Connect to database

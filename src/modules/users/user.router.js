@@ -1,3 +1,4 @@
+"use strict";
 import express from "express";
 import { addUser, deleteUser, getUsers, productsUser, searchUser, updateUser, userId } from "./user.controller.js";
 

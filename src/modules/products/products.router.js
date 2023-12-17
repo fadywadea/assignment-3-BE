@@ -1,3 +1,4 @@
+"use strict";
 import express from "express";
 import { addProduct, deleteProduct, getProducts, searchProducts, updateProduct } from "./products.controller.js";
 

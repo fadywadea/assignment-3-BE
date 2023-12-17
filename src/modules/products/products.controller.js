@@ -1,3 +1,4 @@
+"use strict";
 import { query } from "../../../database/dbConnection.js";
 
 // get all products
