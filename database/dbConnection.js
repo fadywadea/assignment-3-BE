@@ -1,8 +1,9 @@
 "use strict";
 
-import mysql from "mysql2";
+import { createConnection } from "mysql2";
 
-export const query = mysql.createConnection({
+// Connect to database
+export const query = createConnection({
   host: "localhost",
   user: "root",
   password: "",
