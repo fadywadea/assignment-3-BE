@@ -11,8 +11,8 @@ app.use(express.json());
 
 // server running...
 app.get("/", (req, res) => {
-  res.json({ message: "server running..." })
-})
+  res.json({ message: "server running..." });
+});
 
 // user APIs:
 app.use(userRouter);
